@@ -23,7 +23,7 @@ def test_add_expense_server_rejects_invalid_amount_even_if_client_checks_are_byp
     form = ExpenseFormPage(driver, base_url).load()
     form.fill_form(description="Bad amount", amount="0", category="food", date="2026-03-01")
     # amount=0 fails the server's ge=0.01 minimum, but it also fails the
-    # input's own min="0.01" — a real click would never leave this page.
+    # input's own min="0.01"; a real click would never leave this page.
     # Bypassing client-side validation proves the server enforces this
     # independently, not just the browser.
     form.submit_bypassing_client_validation()

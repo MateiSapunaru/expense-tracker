@@ -10,8 +10,8 @@ from app.models import Expense
 
 # Selenium drives a real browser against a real HTTP server (unlike
 # Schemathesis's in-process ASGI trick in tests/api), so this suite needs the
-# app actually running — `docker compose up` locally, a background `uvicorn`
-# process in CI — and talks to the same Postgres directly to seed/reset data.
+# app actually running: `docker compose up` locally, a background `uvicorn`
+# process in CI. It talks to the same Postgres directly to seed and reset data.
 BASE_URL = os.environ.get("UI_BASE_URL", "http://localhost:8000")
 
 

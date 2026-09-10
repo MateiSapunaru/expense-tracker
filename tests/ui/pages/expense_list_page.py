@@ -9,7 +9,7 @@ PATH = "/"
 class ExpenseListPage(BasePage):
     """POM for the server-rendered expense list page ('/')."""
 
-    # Exactly one of these two is always present — the server renders either
+    # Exactly one of these two is always present: the server renders either
     # the table or the empty-state paragraph, never both.
     _READY = (By.CSS_SELECTOR, "#expenses-table, #empty-state")
     _ROWS = (By.CSS_SELECTOR, "#expenses-table tbody tr")

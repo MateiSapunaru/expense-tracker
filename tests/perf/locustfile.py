@@ -3,9 +3,9 @@ from datetime import date, timedelta
 
 from locust import HttpUser, between, task
 
-# Deliberately no Faker dependency for a handful of realistic-enough values —
-# pulling in a data-generation library just for this would be exactly the
-# kind of unexplainable/indefensible addition this project is trying to avoid.
+# Deliberately no Faker dependency for a handful of realistic-enough values.
+# Pulling in a data-generation library just for this would be exactly the
+# kind of unexplainable, indefensible addition this project is trying to avoid.
 _DESCRIPTIONS = [
     "Groceries", "Coffee", "Metro pass", "Electricity bill", "Gym membership",
     "Dinner out", "Movie tickets", "Phone bill", "Rent", "Pharmacy",
@@ -23,12 +23,12 @@ def _random_expense() -> dict:
 
 
 class ExpenseTrackerUser(HttpUser):
-    """Load-tests the two hottest JSON endpoints — listing expenses (read,
-    paginated) and creating one (write) — weighted 3:1 to reflect a
-    read-heavy usage pattern: most requests browse the list, far fewer add
-    a new expense. Page routes (Jinja2) aren't included here; they're the
-    same process serving the same DB, so load-testing the JSON API already
-    exercises the shared crud.py/DB path underneath both."""
+    """Load-tests the two busiest JSON endpoints: listing expenses (read,
+    paginated) and creating one (write), weighted 3:1 to reflect a
+    read-heavy usage pattern where most requests browse the list and far
+    fewer add a new expense. Page routes (Jinja2) aren't included here;
+    they're the same process serving the same DB, so load-testing the JSON
+    API already exercises the shared crud.py/DB path underneath both."""
 
     wait_time = between(0.1, 1)
 

@@ -10,10 +10,10 @@ from app.models import ExpenseCategory
 class ExpenseCreate(BaseModel):
     # Postgres text columns reject embedded NUL bytes at the wire protocol
     # level, which otherwise surfaces as an unhandled 500 rather than a
-    # validation error — length/type constraints alone don't catch this
-    # since a NUL byte is a perfectly valid single character otherwise.
+    # validation error, since length/type constraints alone don't catch this
+    # (a NUL byte is a perfectly valid single character otherwise).
     # Expressed as `pattern` (not a bespoke validator) so the constraint is
-    # both enforced AND documented in the OpenAPI schema — Schemathesis
+    # both enforced and documented in the OpenAPI schema. Schemathesis
     # respects a documented `pattern` when generating "valid" data instead
     # of treating our rejection of it as a contract mismatch.
     description: str = Field(min_length=1, max_length=255, pattern=r"^[^\x00]*$")

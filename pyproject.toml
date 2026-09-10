@@ -27,7 +27,7 @@ api-tests = [
 ]
 ui-tests = [
     # Selenium >=4.6 ships Selenium Manager, which auto-resolves the matching
-    # chromedriver — no separate webdriver-manager dependency needed.
+    # chromedriver, so no separate webdriver-manager dependency is needed.
     "selenium>=4.20",
 ]
 perf-tests = [

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/expenses", tags=["expenses"])
     "",
     response_model=schemas.ExpenseRead,
     status_code=201,
-    # Starlette returns a bare 400 for a body that isn't valid JSON at all —
+    # Starlette returns a bare 400 for a body that isn't valid JSON at all,
     # raised before Pydantic validation runs, so FastAPI never auto-documents
     # it (only 422 for validation failures on a parsed body is added
     # automatically). Declaring it here so the spec matches real behavior.

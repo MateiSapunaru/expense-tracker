@@ -47,15 +47,15 @@ class ExpenseFormPage(BasePage):
         return self
 
     def submit(self) -> None:
-        """Realistic path: click the submit button, same as a real user —
-        the browser's own HTML5 constraints (required/min/max/step) apply."""
+        """Realistic path: click the submit button, same as a real user.
+        The browser's own HTML5 constraints (required/min/max/step) apply."""
         self.driver.find_element(*self._SUBMIT).click()
 
     def submit_bypassing_client_validation(self) -> None:
         """Calls the <form> element's native `submit()` via JS. Per the HTML
         spec this skips constraint validation entirely (unlike a real click
         or `requestSubmit()`), which is exactly what any non-browser client
-        (curl, a hand-crafted request) would also skip — so it's how this
+        (curl, a hand-crafted request) would also skip, which is how this
         suite proves the server enforces validation on its own, not just the
         page's HTML attributes."""
         self.driver.execute_script("arguments[0].submit();", self.driver.find_element(*self._FORM))

@@ -37,7 +37,7 @@ jobs:
   # ui-tests and perf-smoke each repeat the postgres service block and the
   # "start app + wait for /health" steps rather than factoring them into a
   # composite action. Extracting ~15 duplicated lines across two jobs isn't
-  # worth the added indirection for a workflow this small — a call to
+  # worth the added indirection for a workflow this small, but is a call to
   # revisit if a fourth job ever needs the same setup.
   ui-tests:
     name: UI tests (Selenium)
@@ -126,7 +126,7 @@ jobs:
       # check ("does concurrent load produce errors") rather than the longer
       # local benchmark run documented in the README. Locust's headless mode
       # exits non-zero on its own if any request failed, which is what
-      # actually fails this job — there's no separate latency-threshold
+      # actually fails this job. There's no separate latency-threshold
       # assertion, since that would need calibrating a real SLO, which is
       # out of scope for a smoke check on a portfolio project.
       - run: locust -f tests/perf/locustfile.py --headless -u 10 -r 5 -t 15s --host http://localhost:8000
