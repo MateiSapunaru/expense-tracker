@@ -188,11 +188,11 @@ repeated runs, a Jinja2 frontend (list + add-expense form, PRG on submit)
 verified manually in-browser including the server-side validation error
 path, and a CI skeleton running the schema suite on every push.
 
-Day 2 in progress: Selenium UI suite covers the expense list (empty state,
+Day 2 complete: Selenium UI suite covers the expense list (empty state,
 populated state, date-descending ordering) and the add-expense form (happy
 path through to the redirect, and the server-side validation path via a
-client-validation bypass) — 5 tests, all passing against the containerized
-app. Locust smoke test run against the same containerized app: 0 failures
-at 20 concurrent users, with a documented (non-bug) create-vs-list latency
-gap — see above. Remaining: finalized parallel CI (`ui-tests` +
-`perf-smoke` jobs).
+client-validation bypass) — 5 tests. Locust smoke test run against the
+containerized app: 0 failures at 20 concurrent users, with a documented
+(non-bug) create-vs-list latency gap — see above. CI now runs all three
+jobs (`api-schema`, `ui-tests`, `perf-smoke`) in parallel on every push/PR,
+confirmed green on an actual GitHub Actions run — not just locally.
