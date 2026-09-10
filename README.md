@@ -98,10 +98,20 @@ docker compose up --build
 Then check `http://localhost:8000/health` — it should return `{"status": "ok"}`
 once the app has connected to Postgres.
 
+## CI
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) currently runs one job,
+`api-schema`, against a Postgres service container on every push/PR to
+`master`. It's deliberately not the full three-job (UI / API-schema / perf)
+setup from the project plan yet — `ui-tests` (Selenium) and `perf-smoke`
+(Locust) are added on Day 2 alongside the suites they actually run, rather
+than standing up empty CI jobs today with nothing behind them.
+
 ## Status
 
-Day 1, step 4: `Expense` model + `POST/GET /api/expenses` (paginated),
+Day 1 complete: `Expense` model + `POST/GET /api/expenses` (paginated),
 Schemathesis contract suite passing (see findings above) and stable across
-repeated runs, and a Jinja2 frontend (list + add-expense form, PRG on
-submit) verified manually in-browser including the server-side validation
-error path. CI skeleton still to come.
+repeated runs, a Jinja2 frontend (list + add-expense form, PRG on submit)
+verified manually in-browser including the server-side validation error
+path, and a CI skeleton running the schema suite on every push. Day 2:
+Selenium UI suite, Locust load test, finalized parallel CI.
