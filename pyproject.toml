@@ -25,6 +25,14 @@ dev = [
 api-tests = [
     "schemathesis>=4.0",
 ]
+ui-tests = [
+    # Selenium >=4.6 ships Selenium Manager, which auto-resolves the matching
+    # chromedriver — no separate webdriver-manager dependency needed.
+    "selenium>=4.20",
+]
+perf-tests = [
+    "locust>=2.29",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]

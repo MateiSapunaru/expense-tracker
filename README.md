@@ -89,6 +89,79 @@ schema-accuracy fixes and two documented judgment calls about what *not* to
 excluding a check without justification would be worse than not running
 Schemathesis at all.
 
+## Selenium UI suite
+
+[tests/ui/](tests/ui/) drives the Jinja2 pages through a real browser —
+the layer Schemathesis deliberately doesn't touch (page routes are
+`include_in_schema=False`, see above). Structured as Page Object Model:
+`tests/ui/pages/base_page.py` holds the driver, a shared explicit wait, and
+navigation via the nav bar common to every page; `expense_list_page.py` and
+`expense_form_page.py` each model one page's locators and actions.
+
+A few decisions worth being able to defend:
+
+- **Selenium Manager, no `webdriver-manager`.** Selenium ≥4.6 auto-resolves
+  the matching chromedriver itself. `webdriver-manager` solved a problem
+  that no longer exists as a separate dependency.
+- **Test data is seeded by talking to the DB directly** (via the app's own
+  `crud.py`/`SessionLocal`), the same pattern `tests/api/conftest.py` already
+  uses, rather than seeding through the JSON API over HTTP. Faster, and
+  keeps the UI suite from having a hard dependency on the API layer being
+  up — the trade-off is it's not a *fully* black-box suite, which is a fair
+  thing to be asked about.
+- **The suite talks to a real running `uvicorn` process**, unlike
+  Schemathesis's in-process ASGI trick — a browser can't drive an app that
+  isn't actually listening on a port. Locally that's `docker compose up`;
+  CI starts `uvicorn` as a background step (see CI below).
+- **`amount=0` is submitted by calling the `<form>` element's native
+  `submit()` via JS**, not by clicking the Save button. Per the HTML spec,
+  a direct `.submit()` call skips the browser's own constraint validation
+  (`min="0.01"` on the input), unlike a real click. That's the point: any
+  non-browser client (curl, a hand-crafted request) skips the same
+  client-side checks, so this is how the suite proves the server enforces
+  the `ge=0.01` minimum on its own rather than relying on the page's HTML
+  attributes to keep bad data out.
+- **Date fields are set via `element.value = ...` + a dispatched `input`/
+  `change` event**, not `send_keys`. A native `<input type="date">` expects
+  locale-formatted keystrokes (e.g. `MM/DD/YYYY` on en-US Chrome), which is
+  a well-documented source of Selenium flakiness across environments.
+
+## Locust load test (smoke)
+
+[tests/perf/locustfile.py](tests/perf/locustfile.py) load-tests the two
+hottest JSON endpoints — `GET /api/expenses` (list, paginated) and
+`POST /api/expenses` (create) — weighted 3:1 read:write to approximate real
+usage (most requests browse the list; far fewer add an expense). It's a
+smoke test, not a capacity benchmark: the goal is "does this reveal anything
+worth knowing," not "what's the maximum throughput this can sustain."
+
+Run against the containerized app:
+
+```bash
+locust -f tests/perf/locustfile.py --headless -u 20 -r 5 -t 30s --host http://localhost:8000
+```
+
+**Result at 20 concurrent users, 30s:** 956 requests, 0 failures.
+
+| Endpoint | Median | 95th pct | Max |
+|---|---|---|---|
+| `GET /api/expenses` (list) | 11 ms | 22 ms | 114 ms |
+| `POST /api/expenses` (create) | 59 ms | 68 ms | 166 ms |
+
+**Finding:** creating an expense is consistently ~5x slower than listing
+them, even though both are single-row-scale operations against a table with
+only a few hundred rows. The likely cause is in
+[crud.py](src/app/crud.py#L6-L11): `create_expense` does `db.add()` →
+`db.commit()` → `db.refresh()`. The commit is a real disk-synced write
+(`fsync`), and `refresh()` issues a second round-trip `SELECT` afterward to
+reload the server-generated `id` and `created_at` — needed because
+`ExpenseRead` returns both, but it means every create is a write *plus* a
+read, while list is a single read. This isn't a bug (the endpoint still
+responds well under 100ms at this scale, comfortably fine for the traffic
+this app would ever see) — but it's the honest, expected shape of a
+write-vs-read latency gap, and worth being able to explain rather than being
+surprised by if asked "why is create slower than list?" in an interview.
+
 ## Running locally
 
 ```bash
@@ -113,5 +186,13 @@ Day 1 complete: `Expense` model + `POST/GET /api/expenses` (paginated),
 Schemathesis contract suite passing (see findings above) and stable across
 repeated runs, a Jinja2 frontend (list + add-expense form, PRG on submit)
 verified manually in-browser including the server-side validation error
-path, and a CI skeleton running the schema suite on every push. Day 2:
-Selenium UI suite, Locust load test, finalized parallel CI.
+path, and a CI skeleton running the schema suite on every push.
+
+Day 2 in progress: Selenium UI suite covers the expense list (empty state,
+populated state, date-descending ordering) and the add-expense form (happy
+path through to the redirect, and the server-side validation path via a
+client-validation bypass) — 5 tests, all passing against the containerized
+app. Locust smoke test run against the same containerized app: 0 failures
+at 20 concurrent users, with a documented (non-bug) create-vs-list latency
+gap — see above. Remaining: finalized parallel CI (`ui-tests` +
+`perf-smoke` jobs).

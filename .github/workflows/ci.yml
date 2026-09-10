@@ -34,6 +34,99 @@ jobs:
       - run: pip install -e ".[dev,api-tests]"
       - run: pytest tests/api -v
 
-  # ui-tests (Selenium) and perf-smoke (Locust) are added on Day 2 alongside
-  # the test suites they run — an empty job with no tests behind it yet
-  # would just be dead scaffolding.
+  # ui-tests and perf-smoke each repeat the postgres service block and the
+  # "start app + wait for /health" steps rather than factoring them into a
+  # composite action. Extracting ~15 duplicated lines across two jobs isn't
+  # worth the added indirection for a workflow this small — a call to
+  # revisit if a fourth job ever needs the same setup.
+  ui-tests:
+    name: UI tests (Selenium)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: expenses
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/expenses
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # ubuntu-latest ships google-chrome-stable already; Selenium >=4.6's
+      # Selenium Manager resolves the matching chromedriver itself, so no
+      # separate browser/driver setup step is needed.
+      - run: pip install -e ".[dev,ui-tests]"
+      - name: Start app in background
+        run: nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+      - name: Wait for app to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then
+              echo "App is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App did not become healthy in time"
+          cat uvicorn.log
+          exit 1
+      - run: pytest tests/ui -v
+
+  perf-smoke:
+    name: Perf smoke test (Locust)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: expenses
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/expenses
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,perf-tests]"
+      - name: Start app in background
+        run: nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+      - name: Wait for app to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then
+              echo "App is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App did not become healthy in time"
+          cat uvicorn.log
+          exit 1
+      # Short by design: this runs on every push/PR, so it stays a smoke
+      # check ("does concurrent load produce errors") rather than the longer
+      # local benchmark run documented in the README. Locust's headless mode
+      # exits non-zero on its own if any request failed, which is what
+      # actually fails this job — there's no separate latency-threshold
+      # assertion, since that would need calibrating a real SLO, which is
+      # out of scope for a smoke check on a portfolio project.
+      - run: locust -f tests/perf/locustfile.py --headless -u 10 -r 5 -t 15s --host http://localhost:8000

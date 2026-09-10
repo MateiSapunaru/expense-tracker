@@ -11,3 +11,4 @@ build/
 htmlcov/
 .idea/
 .vscode/
+tests/perf/*.csv
