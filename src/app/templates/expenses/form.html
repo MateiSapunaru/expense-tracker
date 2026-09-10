@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Add expense{% endblock %}
+
+{% block content %}
+<h1>Add expense</h1>
+
+{% if error %}
+<p class="error" id="form-error">{{ error }}</p>
+{% endif %}
+
+<form method="post" action="/expenses/new" id="expense-form">
+  <label for="description">Description</label>
+  <input type="text" id="description" name="description" value="{{ values.description if values else '' }}" required maxlength="255">
+
+  <label for="amount">Amount</label>
+  <input type="number" id="amount" name="amount" value="{{ values.amount if values else '' }}" step="0.01" min="0.01" max="99999999.99" required>
+
+  <label for="category">Category</label>
+  <select id="category" name="category" required>
+    {% for choice in categories %}
+    <option value="{{ choice.value }}" {% if values and values.category == choice.value %}selected{% endif %}>{{ choice.value }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="date">Date</label>
+  <input type="date" id="date" name="date" value="{{ values.date if values else '' }}" required>
+
+  <button type="submit" id="submit-expense">Save</button>
+</form>
+{% endblock %}

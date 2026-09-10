@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Expense Tracker{% endblock %}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; color: #222; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid #ddd; }
+    label { display: block; margin-top: 0.75rem; }
+    input, select { padding: 0.3rem; }
+    .error { color: #b00020; }
+    nav a { margin-right: 1rem; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Expenses</a>
+    <a href="/expenses/new">Add expense</a>
+  </nav>
+  <hr>
+  {% block content %}{% endblock %}
+</body>
+</html>

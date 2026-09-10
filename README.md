@@ -50,6 +50,16 @@ written as we go, not reconstructed after the fact.
   instead of letting arbitrary strings accumulate in the DB. Trade-off: adding
   a category means a code change, not just new data — acceptable here since
   the category set is small and stable.
+- **Jinja2 pages reuse `crud.py` directly, not an internal HTTP call to the
+  JSON API.** Both are the same process — the JSON API and the HTML pages
+  are two presentation layers over identical business logic, so there's no
+  reason to round-trip through HTTP to talk to itself.
+- **Page routes are `include_in_schema=False`.** Without this they'd be
+  pulled into the OpenAPI spec and Schemathesis would start fuzzing HTML
+  form endpoints as if they were part of the JSON contract. The page routes
+  are covered by Selenium instead; Schemathesis owns the JSON API only.
+- **Create form uses Post/Redirect/Get (303 on success).** Prevents a page
+  refresh after submitting from re-submitting the same expense.
 
 ## Findings from Schemathesis (Day 1)
 
@@ -90,6 +100,8 @@ once the app has connected to Postgres.
 
 ## Status
 
-Day 1, step 3: `Expense` model + `POST/GET /api/expenses` (paginated),
+Day 1, step 4: `Expense` model + `POST/GET /api/expenses` (paginated),
 Schemathesis contract suite passing (see findings above) and stable across
-repeated runs. Jinja2 frontend and CI still to come.
+repeated runs, and a Jinja2 frontend (list + add-expense form, PRG on
+submit) verified manually in-browser including the server-side validation
+error path. CI skeleton still to come.

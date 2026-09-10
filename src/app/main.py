@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
-from app.routers import expenses
+from app.routers import expenses, pages
 
 
 @asynccontextmanager
@@ -16,6 +16,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Expense Tracker", lifespan=lifespan)
 app.include_router(expenses.router)
+app.include_router(pages.router)
 
 
 @app.get("/health")
